@@ -1,0 +1,30 @@
+{
+  "name": "pdf-re-proccessor",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ./bin/www",
+    "start": "pm2 start ecosystem.config.js",
+    "stop": "pm2 stop ecosystem.config.js",
+    "status": "pm2 status"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "basic-ftp": "^5.0.5",
+    "bwip-js": "^4.2.0",
+    "cookie-parser": "~1.4.4",
+    "cronitor": "^2.3.5",
+    "cross-env": "^7.0.3",
+    "date-fns": "^3.6.0",
+    "debug": "~4.3.4",
+    "dotenv": "^16.4.5",
+    "ejs": "3.1.9",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1",
+    "node-cron": "^3.0.3",
+    "pdf-lib": "^1.17.1",
+    "pino": "^8.19.0",
+    "pino-pretty": "^10.3.1"
+  }
+}
