@@ -50,7 +50,9 @@ const makeLastIDotless = (text) => {
 }
 
 /**
- *
+ * The function truncates the text from the point of the last i
+ * This is essential for position the hearted-dot as we can measure the text width
+ * up until the last I and position the heart in this position
  * @param text
  * @return {unknown[]}
  */
