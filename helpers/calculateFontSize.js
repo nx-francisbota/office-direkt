@@ -1,6 +1,10 @@
-const { logger } = require('../utils/logger');
+const { newPDFValues, fontSizeProportionDownscale } = require('../constants/constants')
 
-//check the text to see if M is the majority letter
+/**
+ * Tests the title text density by checking if "M" forms a majority of the text
+ * @param text
+ * @return {boolean}
+ */
 const isMajorityM = (text) => {
     text = text.toLowerCase();
     const mCount = text.split('m').length - 1;
@@ -12,7 +16,6 @@ const isMajorityM = (text) => {
 const isTextShort = (text) => {
     return text.length <= 8;
 }
-
 
 const fontSizeAdjustment = (text, size, font) => {
     if (text !== "merci") {
@@ -41,48 +44,35 @@ const fontSizeAdjustment = (text, size, font) => {
     return font;
 }
 
+/**
+ * This takes the size of pdf being processes, fetches its constants (pdf overlay height and text position from y-origin)
+ * and calculates the percentage offset
+ * @param size
+ * @return {number}
+ */
+const textYOffsetScale = (size) => {
+    const sizeConstants = newPDFValues[size];
+    const heightPx = sizeConstants.heightPx;
+    const textYPx = sizeConstants.yPx;
+    return (1 - (textYPx / heightPx)) / 2;
+}
+
 
 module.exports = {
+    textYOffsetScale,
     calculateFontSize : (size, text) => {
         let fontSize;
         let charLength = text.length
 
         switch(size) {
             case "250":
-                if (charLength >= 1 && charLength <= 8) {
-                    fontSize = 110;
-                } else if (charLength >= 9 && charLength <= 13) {
-                    fontSize = 80;
-                } else if (charLength >= 14 && charLength <= 15) {
-                    fontSize = 50;
-                } else {
-                    logger.info("Text length is outside the defined ranges.")
-                    fontSize = 25
-                }
+                fontSize = 110 * fontSizeProportionDownscale[charLength]
                 break;
             case "400":
-                if (charLength >= 1 && charLength <= 8) {
-                    fontSize = 155;
-                } else if (charLength >= 9 && charLength <= 13) {
-                    fontSize = 120;
-                } else if (charLength >= 14 && charLength <= 15) {
-                    fontSize = 90;
-                } else {
-                    logger.info("Text length is outside the defined ranges.")
-                    fontSize = 40
-                }
+                fontSize = 155 * fontSizeProportionDownscale[charLength]
                 break;
             case "675":
-                if (charLength >= 1 && charLength <= 8) {
-                    fontSize = 180;
-                } else if (charLength >= 9 && charLength <= 13) {
-                    fontSize = 110;
-                } else if (charLength >= 14 && charLength <= 15) {
-                    fontSize = 100;
-                } else {
-                    logger.info("Text length is outside the defined ranges.")
-                    fontSize = 40
-                }
+                fontSize = 140 * fontSizeProportionDownscale[charLength]
         }
         return fontSizeAdjustment(text, size, fontSize);
     }
