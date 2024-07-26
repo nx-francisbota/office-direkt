@@ -54,7 +54,7 @@ module.exports.pdfConstants = {
 }
 
 /**
- *  
+ *
  */
 module.exports.newPDFValues = {
     250: {

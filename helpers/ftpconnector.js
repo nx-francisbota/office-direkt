@@ -127,7 +127,7 @@ exports.scanDir = async function () {
 
 function getPdfJson(fileName) {
     const name = fileName.slice(0, -4);
-    return name + '.json'
+    return name + '.json';
 }
 
 
@@ -177,7 +177,11 @@ async function deleteFile(fileName) {
     }
 }
 
-
+/**
+ * Traces and downloads the pdf file, and it's accompanying pdf
+ * @param file
+ * @param client
+ */
 async function downloadFileAndJson(file, client) {
     try {
         await client.cd(remoteDir)
@@ -202,6 +206,10 @@ async function downloadFileAndJson(file, client) {
     }
 }
 
+/**
+ * Parses the accompanying json file and reads its content
+ * @param filePath
+ */
 async function readJsonFile(filePath) {
     try {
         const data = readFile(filePath)
@@ -220,11 +228,18 @@ async function readJsonFile(filePath) {
     }
 }
 
-
+/**
+ * Asynchronously reads the content of the file in the specified path
+ * @param filePath
+ */
 async function readFile(filePath) {
-    return await fs.promises.readFile(filePath, 'utf8'); // Asynchronous reading
+    return await fs.promises.readFile(filePath, 'utf8');
 }
 
+/**
+ * Checks for the existence of a file and creates it in its absence
+ * @param filePath
+ */
 async function readOrCreateFile(filePath) {
     try {
         return await fs.promises.readFile(filePath, 'utf8');
@@ -241,29 +256,22 @@ async function readOrCreateFile(filePath) {
 
 
 /**
- * @param jsonObject string
+ * Extracts relevant information from a JSON object.
+ * @param {Object} jsonObject - The JSON object to extract information from.
+ * @returns {Object} An object containing the extracted information.
  */
 const getJsonInfo = (jsonObject) => {
-    const integrationData = {};
     if (!jsonObject) {
-        logger.error("Invalid or null json file read");
-        return;
+        logger.error("Invalid or null JSON file read");
+        return {};
     }
-    if (jsonObject.titleText) {
-        integrationData.titleText = jsonObject.titleText;
-    }
-    integrationData.size = jsonObject.size;
-    if (jsonObject.productNumber) {
-        integrationData.productNumber = jsonObject.productNumber;
-    }
-    if (jsonObject.orderNumber) {
-        integrationData.orderNumber = jsonObject.orderNumber;
-    }
-    if (jsonObject.quantity) {
-        integrationData.quantity = jsonObject.quantity;
-    }
-    if (jsonObject.printId) {
-        integrationData.guid = jsonObject.printId;
-    }
-    return integrationData;
-}
+
+    return {
+        titleText: jsonObject.titleText || undefined,
+        size: jsonObject.size,
+        productNumber: jsonObject.productNumber || undefined,
+        orderNumber: jsonObject.orderNumber || undefined,
+        quantity: jsonObject.quantity || undefined,
+        guid: jsonObject.printId || undefined
+    };
+};
