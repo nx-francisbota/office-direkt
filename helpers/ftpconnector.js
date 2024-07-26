@@ -46,7 +46,6 @@ exports.scanDir = async function () {
         const newlyAdded = pdfFiles.filter((file) => {
             const fileModifiedDate = new Date(file.modifiedAt);
             let fileModifiedTime = new Date(fileModifiedDate).valueOf();
-            if(lastScanTime === "") {
 
             if(!lastScanTime) {
                 return true;
@@ -78,36 +77,36 @@ exports.scanDir = async function () {
                 const jsonData = getJsonInfo(json);
 
                 //create the Current file and save the filename in it
-                createFile(__dirname + pathToCurrentFile, file.name)
-
+                createFile(__dirname + pathToCurrentFile, file.name);
 
                 //perform action on temp file
                 const currentFilePath = __dirname + pathToLocalDir + file.name;
                 const processingRecords = await regeneratePdfFiles(jsonData, currentFilePath)
-                const fixedFiles = processingRecords.fixed;
-                const failedFiles = processingRecords.failed;
+                const fixedFile = processingRecords.fixed[0];
+                const failedFile = processingRecords.failed[0];
+                const regenFiles = processingRecords.regen;
 
-
-                if (fixedFiles.length > 0) {
-                    for (const filePath of fixedFiles) {
+                if (regenFiles.length > 0) {
+                    for (const filePath of regenFiles) {
                         logger.info(`Uploading file at ${filePath}`);
 
                         await uploadFile(client, filePath, printOutput);
                     }
-                    fixedFiles.map((file) => deleteFile(file));
+                    regenFiles.map((file) => deleteFile(file));
                 }
 
-                if (failedFiles.length > 0) {
-                    for (const filePath of failedFiles) {
-                        logger.info(`Uploading file at ${filePath}`)
-                        await uploadFile(client, filePath, failDir)
-                    }
+                if (fixedFile) {
+                    logger.info(`Uploading file at ${fixedFile}`);
+                    await uploadFile(client, fixedFile, successDir);
                 }
-                //delete current file
+
+                if (failedFile) {
+                    logger.info(`Uploading file at ${failedFile}`)
+                    await uploadFile(client, failedFile, failDir);
+                }
+
+                //delete CURRENT file
                 await deleteFile(__dirname + pathToCurrentFile);
-
-                //upload files to success folder
-                await uploadFile(client, __dirname + '/../public/pdf/' + file.name, successDir);
 
                 //remove pdf and json files from local
                 await deleteFile(pdfPath);
