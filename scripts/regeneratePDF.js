@@ -6,8 +6,8 @@ const { logger } = require('../utils/logger');
 const { countAndFindLastI, splitToLastI, makeLastIDotless } = require('../utils/heartSvgUtilities');
 const { generatePdfWithBarcode } = require('../helpers/barcodeGenerator');
 const { addMediaAndBleedBox } = require('../helpers/pdfIntegrationInfo');
-const { calculateFontSize, sizeMap } = require('../helpers/calculateFontSize');
-const { pdfConstants  } = require('../constants/constants');
+const { textYOffsetScale, calculateFontSize } = require('../helpers/calculateFontSize');
+const { pdfConstants, svgAdjustmentFactors } = require('../constants/constants');
 const fontBytes = fs.readFileSync(path.join(__dirname, '../public/assets/fonts/MerciLogo-Regular2019.otf'));
 const svgHeart = fs.readFileSync(path.join(__dirname, '../public/assets/merci-herz-small.png'));
 
@@ -66,12 +66,13 @@ exports.regeneratePdfFiles = async (jsonData, file) => {
 
         const pdfPage = (await pdfDoc).getPage(0);
         const pdfWidth = pdfPage.getWidth();
+        const pdfHeight = pdfPage.getHeight();
         let textWidth = arcaneFont.widthOfTextAtSize(titleText, fontSize);
         let textHeight = arcaneFont.heightAtSize(fontSize);
-        const y = pdfConstants[size].y;
+        const y = pdfHeight * textYOffsetScale(size);
         let offsetX = (pdfWidth - textWidth) / 2;
         let svgHeartOffset;
-        let svgScale = arcaneFont.widthOfTextAtSize("i", fontSize);
+        let svgScaleX = arcaneFont.widthOfTextAtSize("i", fontSize);
 
         //set bleed box
         addMediaAndBleedBox(pdfPage);
@@ -79,13 +80,13 @@ exports.regeneratePdfFiles = async (jsonData, file) => {
         const charactersUntilLastI = splitToLastI(titleText);
         titleText = makeLastIDotless(titleText);
         if (charactersUntilLastI.length !== 0) {
-            const sizeArr = charactersUntilLastI.map(t => arcaneFont.widthOfTextAtSize(t, fontSize));
-            const heartWidthOffset = sizeArr.reduce((x, y) => {
+            const textWidthAtFontArray = charactersUntilLastI.map(t => arcaneFont.widthOfTextAtSize(t, fontSize));
+            const textWidthUpToLastI = textWidthAtFontArray.reduce((x, y) => {
                 return x + y
             });
-            svgHeartOffset = heartWidthOffset + offsetX - svgScale;
+            svgHeartOffset = textWidthUpToLastI + offsetX - svgScaleX;
         } else {
-            svgHeartOffset = offsetX + textWidth - 15;
+            svgHeartOffset = offsetX + textWidth - (svgScaleX * 0.6);
         }
 
         pdfPage.drawText(titleText, {
@@ -96,23 +97,18 @@ exports.regeneratePdfFiles = async (jsonData, file) => {
             font: arcaneFont,
         })
 
-        //add .9999 adjustment to center heart a bit more that in output 🤷‍♂️
         let svgDrawOptions = {
             x: svgHeartOffset * 0.9999,
-            y: y + svgYAdjustment(fontSize, size, textHeight),
+            y: y + svgYAdjustment(fontSize, size, textHeight, titleText.length),
             color: cmyk(0, 0, 0, 0),
-            width: svgScale,
-            height: svgScale * 0.92,
+            width: svgScaleX,
+            height: svgScaleX * 0.92,
         };
 
-        if (textInformation.count > 0) {
-            pdfPage.drawRectangle(svgDrawOptions)
-            pdfPage.drawImage(embeddedPng, svgDrawOptions)
-        } else {
-            pdfPage.drawImage(embeddedPng, svgDrawOptions)
-        }
+        pdfPage.drawImage(embeddedPng, svgDrawOptions)
 
-        await generatePdfWithBarcode({productNumber, orderNumber}, pdfDoc);
+        //Generate barcode
+        await generatePdfWithBarcode({productNumber, orderNumber, pdfWidth, pdfHeight}, pdfDoc);
 
         const mod = await pdfDoc.save();
         const fixedFiles = processingRecords.fixed;
@@ -125,22 +121,20 @@ exports.regeneratePdfFiles = async (jsonData, file) => {
         logger.info(`Processing complete. Text successfully added to ${orderNumber}_${guid}-${size}g`);
     } catch (e) {
         processingRecords.failed.push(file)
-        logger.error(`Error adding title text to pdf file ${orderNumber}-${guid} : ${e}. Finding new file...`);
+        logger.error(`Error processing pdf file ${orderNumber}-${guid} : ${e}. Finding new file...`);
     }
     return processingRecords
 }
 
 
-const svgYAdjustment = (fontSize, pdfSize, textHeight) => {
+const svgYAdjustment = (fontSize, pdfSize, textHeight, textLength) => {
     let yAdjustment = (textHeight / 2) - 5;
-    if (pdfSize === "250") {
-        if (fontSize === 30 || fontSize === 35) {
-            yAdjustment = (textHeight / 2) - 2;
-        }
-    } else if (pdfSize === "675") {
-        if (fontSize === 130) {
-            yAdjustment = (textHeight / 2) - 6;
-        }
+    let factor = 1;
+    if (textLength >=8 && textLength <= 11) {
+        factor = svgAdjustmentFactors[1];
+    } else if (textLength >= 12 && textLength <= 15) {
+        factor = svgAdjustmentFactors[2]
     }
-    return yAdjustment;
+
+    return yAdjustment * factor;
 }
