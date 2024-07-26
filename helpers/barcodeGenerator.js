@@ -14,11 +14,11 @@ const generateBarcodeSVGBuffer = async (prop) => {
 }
 
 async function generatePdfWithBarcode(data, pdfDoc) {
-    const { productNumber, orderNumber } = data;
+    const { productNumber, orderNumber, pdfWidth, pdfHeight } = data;
     const barcodeProdData = await generateBarcodeSVGBuffer(productNumber);
     const barcodeOrderData = await generateBarcodeSVGBuffer(orderNumber);
 
-    const page = pdfDoc.addPage([940, 544]);
+    const page = pdfDoc.addPage([pdfWidth, pdfHeight]);
 
     //set media and bleed boxes
     addMediaAndBleedBox(page);
