@@ -25,16 +25,20 @@ exports.regeneratePdfFiles = async (jsonData, file) => {
     }
     titleText = titleText.toLowerCase();
 
-
+    /**
+     * This holds records of the file if its fixed, failed processing, or regenerated
+     * fixed - original file name
+     * failed - original file name
+     * regenerated - original file name + size + index
+     */
     const processingRecords = {
         fixed: [],
         failed: [],
+        regen: [],
     }
     const { size, guid, productNumber, orderNumber, quantity } = jsonData;
 
-    if (!quantity
-    ||
-    !orderNumber) {
+    if (!quantity || !orderNumber || !productNumber) {
         logger.error(`Item quantity, product number or order number missing from json for file ${file.name}`);
         processingRecords.failed.push(file);
         return processingRecords;
@@ -107,18 +111,18 @@ exports.regeneratePdfFiles = async (jsonData, file) => {
 
         pdfPage.drawImage(embeddedPng, svgDrawOptions)
 
-        //Generate barcode
+        //Generate Barcode Page Data
         await generatePdfWithBarcode({productNumber, orderNumber, pdfWidth, pdfHeight}, pdfDoc);
 
-        const mod = await pdfDoc.save();
-        const fixedFiles = processingRecords.fixed;
+        const serializedBuffer = await pdfDoc.save();
 
         for (let i=1; i <= quantity; i++) {
             const filePath = `${__dirname}/../public/pdf/${orderNumber}_${guid}-${size}g-${i}.pdf`
-            fs.writeFileSync(filePath, mod);
-            fixedFiles.push(filePath);
+            fs.writeFileSync(filePath, serializedBuffer);
+            processingRecords.regen.push(filePath);
         }
         logger.info(`Processing complete. Text successfully added to ${orderNumber}_${guid}-${size}g`);
+        processingRecords.fixed.push(file)
     } catch (e) {
         processingRecords.failed.push(file)
         logger.error(`Error processing pdf file ${orderNumber}-${guid} : ${e}. Finding new file...`);
