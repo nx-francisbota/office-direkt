@@ -47,6 +47,8 @@ exports.scanDir = async function () {
             const fileModifiedDate = new Date(file.modifiedAt);
             let fileModifiedTime = new Date(fileModifiedDate).valueOf();
             if(lastScanTime === "") {
+
+            if(!lastScanTime) {
                 return true;
             }
             return fileModifiedTime > lastScanTime;
